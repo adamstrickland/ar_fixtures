@@ -15,6 +15,10 @@ def limit_or_nil_string
   ENV['LIMIT'].blank? ? 'nil' : ENV['LIMIT']
 end
 
+def app_models
+  Dir[File.join(Rails.root, 'app', 'models') + "/*.rb"].map{|path| File.basename(path, ".rb").camelize}
+end
+
 namespace :db do
   namespace :fixtures do
     desc "Dump data to the test/fixtures/ directory. Use MODEL=ModelName and LIMIT (optional)"
@@ -34,15 +38,25 @@ namespace :db do
       end
 
       task :all => :environment do
-        Dir[File.join(Rails.root, 'app', 'models') + "/*.rb"].map{|path| File.basename(path, ".rb").camelize}.each do |model|
+        app_models.each do |model|
           eval "#{model}.dump_to_file(nil, #{limit_or_nil_string})"
         end
       end
     end
 
     desc "Load data from the db/ directory. Use MODEL=ModelName"
-    task :load => :environment do
-      eval "#{model_or_raise}.load_from_file"
+    task :load => ["load:model"] 
+    
+    namespace :load do
+      task :model => :environment do
+        eval "#{model_or_raise}.load_from_file"
+      end
+      
+      task :all => :environment do
+        app_models.each do |model|
+          eval "#{model}.load_from_file"
+        end
+      end
     end
   end
 end
