@@ -24,10 +24,20 @@ namespace :db do
   end
     
   namespace :data do
-    desc "Dump data to the db/ directory. Use MODEL=ModelName and LIMIT (optional)"
-    task :dump => :environment do
-      eval "#{model_or_raise}.dump_to_file(nil, #{limit_or_nil_string})"
-      puts "#{model_or_raise} has been dumped to the db folder."
+    task :dump => [ "dump:model" ]
+    
+    namespace :dump do
+      desc "Dump data to the db/ directory. Use MODEL=ModelName and LIMIT (optional)"
+      task :model => :environment do
+        eval "#{model_or_raise}.dump_to_file(nil, #{limit_or_nil_string})"
+        puts "#{model_or_raise} has been dumped to the db folder."
+      end
+
+      task :all => :environment do
+        Dir[File.join(Rails.root, 'app', 'models') + "/*.rb"].map{|path| File.basename(path, ".rb").camelize}.each do |model|
+          eval "#{model}.dump_to_file(nil, #{limit_or_nil_string})"
+        end
+      end
     end
 
     desc "Load data from the db/ directory. Use MODEL=ModelName"
